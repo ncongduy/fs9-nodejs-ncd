@@ -1,10 +1,16 @@
 import http from 'http';
 
-export class Request {
-	body: {};
+type Handler = (req: Request, res: Response) => void;
 
-	constructor() {
-		this.body = {};
+type Body = {
+	[key: string]: any;
+};
+
+export class Request {
+	body: Body;
+
+	constructor(body: Body) {
+		this.body = body;
 	}
 }
 
@@ -33,46 +39,44 @@ export default class Express {
 	request: {
 		path: string;
 		method: string;
-		status: number;
-		message: string;
+		handler: Handler;
 	}[];
 
 	constructor() {
 		this.request = [];
 	}
 
-	get(path: string, handler: (req: Request, res: Response) => void) {
-		const request = new Request();
-		const response = new Response();
-		handler(request, response);
-
+	get(path: string, handler: Handler) {
 		const newData = {
 			path,
 			method: 'GET',
-			status: response.statusCode,
-			message: response.message,
+			handler,
 		};
 
 		this.request = [...this.request, newData];
 	}
 
-	post(path: string, handler: (req: Request, res: Response) => void) {
-		const request = new Request();
-		const response = new Response();
-		handler(request, response);
-
+	post(path: string, handler: Handler) {
 		const newData = {
 			path,
 			method: 'POST',
-			status: response.statusCode,
-			message: response.message,
+			handler,
 		};
 
 		this.request = [...this.request, newData];
 	}
 
 	listen(port: number) {
-		const server = http.createServer((req, res) => {
+		const server = http.createServer(async (req, res) => {
+			// read data from request
+			const buffers = [];
+			for await (const chunk of req) {
+				buffers.push(chunk);
+			}
+			const data = Buffer.concat(buffers).toString();
+			const body = JSON.parse(data);
+
+			// handle when user send a request
 			const method = req.method;
 			const url = req.url;
 
@@ -81,10 +85,14 @@ export default class Express {
 			);
 
 			if (typeof router === 'object') {
-				res.statusCode = router.status;
-				res.end(router.message);
+				const request = new Request(body);
+				const response = new Response();
+				router.handler(request, response);
+
+				res.statusCode = response.statusCode;
+				res.end(response.message);
 			} else {
-				res.end('Do not have match route.');
+				res.end('Unrecognized method.');
 			}
 		});
 

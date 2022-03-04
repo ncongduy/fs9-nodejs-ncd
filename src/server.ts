@@ -12,11 +12,15 @@ app.get('/user', (req: Request, res: Response) => {
 
 app.post('/', (req: Request, res: Response) => {
 	const body = req.body;
+	console.log(body);
+
 	res.status(200).send('post request');
 });
 
 app.post('/user', (req: Request, res: Response) => {
 	const body = req.body;
+	console.log(body);
+
 	res.status(200).send('post request user');
 });
 
