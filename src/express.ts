@@ -73,7 +73,7 @@ export default class Express {
 			for await (const chunk of req) {
 				buffers.push(chunk);
 			}
-			const data = Buffer.concat(buffers).toString();
+			const data = Buffer.concat(buffers).toString() || '{}';
 			const body = JSON.parse(data);
 
 			// handle when user send a request
@@ -84,7 +84,7 @@ export default class Express {
 				(rq) => rq.path === url && rq.method === method
 			);
 
-			if (typeof router === 'object') {
+			if (router) {
 				const request = new Request(body);
 				const response = new Response();
 				router.handler(request, response);
